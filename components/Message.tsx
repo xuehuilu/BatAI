@@ -268,12 +268,14 @@ const MarkdownContent = ({ content }: { content: string }) => {
                 ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-4 pl-4 space-y-1" {...props} />,
                 li: ({ node, ...props }) => <li className="pl-2" {...props} />,
                 blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4 text-gray-600" {...props} />,
-                code: ({ node, inline, className, children, ...props }) => {
-                    if (inline) {
-                        return <code className="bg-gray-200 text-gray-800 rounded px-1.5 py-1 text-sm font-mono" {...props}>{children}</code>;
-                    }
-                    return (
+                // FIX: The `inline` prop is deprecated in recent versions of `react-markdown`.
+                // The modern way to distinguish between inline and block code is to check for a `language-*` className.
+                code: ({ node, className, children, ...props }) => {
+                    const match = /language-(\w+)/.exec(className || '');
+                    return match ? (
                         <pre className="bg-gray-800 text-white p-4 rounded-md my-4 overflow-x-auto"><code className="text-sm font-mono" {...props}>{children}</code></pre>
+                    ) : (
+                        <code className="bg-gray-200 text-gray-800 rounded px-1.5 py-1 text-sm font-mono" {...props}>{children}</code>
                     );
                 },
                 table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse border border-gray-300" {...props} /></div>,
@@ -343,9 +345,9 @@ const Message: React.FC<MessageProps> = ({ message }) => {
                     <details className="border border-gray-200 rounded-xl overflow-hidden bg-white" open={!showReport}>
                         <summary className="px-4 py-3 bg-gray-50 cursor-pointer font-semibold text-sm text-gray-700 flex justify-between items-center hover:bg-gray-100 list-none group">
                             <span>Thought Process</span>
-                            <ChevronDownIcon className="text-gray-500 group-open:rotate-180 transition-transform"/>
+                            <ChevronDownIcon className="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform"/>
                         </summary>
-                        <div className="p-4 border-t border-gray-200">
+                        <div className="p-4 border-t border-gray-200 text-sm text-gray-700">
                            <MarkdownContent content={message.thoughtProcess} />
                         </div>
                     </details>
