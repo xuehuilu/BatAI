@@ -1,0 +1,5 @@
+{
+  "name": "BatAI - Smart Business Inspection Platform",
+  "description": "An intelligent business inspection platform that uses AI to analyze data sources like logs and traces, providing deep insights, dynamic baseline learning, and root cause analysis to reduce alarms and improve system observability.",
+  "requestFramePermissions": []
+}
