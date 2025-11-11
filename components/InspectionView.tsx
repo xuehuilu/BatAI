@@ -1,12 +1,11 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
-// FIX: Import GoogleGenAI and Type for API calls
-import { GoogleGenAI, Type } from "@google/genai";
 import { MessageType, AssistantMessage, MessageStep } from '../types';
 import EmptyState from './EmptyState';
 import Message from './Message';
 
-// FIX: Define local icon components as new files cannot be added
+// Local icon components
 const SendIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "w-6 h-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -18,7 +17,9 @@ const SparklesIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
-const thoughtProcessText = `**巡检时间**: 2024-11-11 14:30:00  
+
+// Structured thought process data for dynamic display
+const thoughtProcessPreamble = `**巡检时间**: 2024-11-11 14:30:00  
 **分析周期**: 过去24小时 (2024-11-10 14:30 ~ 2024-11-11 14:30)  
 **巡检目标**: \`/api/payment/submit\` 缴费提交接口
 
@@ -49,8 +50,11 @@ const thoughtProcessText = `**巡检时间**: 2024-11-11 14:30:00
 ---
 
 ## 二、Skills 调用过程
+`;
 
-### Step 1: 连接阿里云 SLS 数据源
+const thoughtProcessSteps = [
+    { // Step 1
+        input: `### Step 1: 连接阿里云 SLS 数据源
 
 **Skill**: \`sls_connector\`
 
@@ -60,9 +64,8 @@ endpoint: cn-beijing.log.aliyuncs.com
 project: sgcc-production-logs
 logstore: app-access-log
 auth_method: access_key
-\`\`\`
-
-**执行结果**:
+\`\`\``,
+        output: `**执行结果**:
 \`\`\`
 ✓ 连接成功
 ✓ 凭证验证通过
@@ -70,9 +73,10 @@ auth_method: access_key
 最新日志时间: 2024-11-11 14:29:45
 \`\`\`
 
----
-
-### Step 2: 构建查询语句并提取关键指标
+---`
+    },
+    { // Step 2
+        input: `### Step 2: 构建查询语句并提取关键指标
 
 **Skill**: \`sls_query_builder\`
 
@@ -108,9 +112,8 @@ filters:
       COUNT_IF(http_status = 400) as error_400
   | GROUP BY time_bucket
   | ORDER BY time_bucket
-\`\`\`
-
-**查询执行结果**:
+\`\`\``,
+        output: `**查询执行结果**:
 
 📊 **数据源**: 阿里云 SLS - \`sgcc-production-logs/app-access-log\`  
 📊 **查询时间**: 2024-11-11 14:30:15  
@@ -135,9 +138,10 @@ filters:
 - Logstore: \`app-access-log\`
 - 查询ID: \`query-20241111-143015-a7f3b2\`
 
----
-
-### Step 3: 学习历史基线
+---`
+    },
+    { // Step 3
+        input: `### Step 3: 学习历史基线
 
 **Skill**: \`baseline_learning\`
 
@@ -162,9 +166,8 @@ confidence_interval: 0.95
       APPROX_PERCENTILE(response_time, 0.99) as p99_latency
   | GROUP BY time_bucket
   | ORDER BY time_bucket
-\`\`\`
-
-**历史基线数据** (工作日 10:00-12:00 时段):
+\`\`\``,
+        output: `**历史基线数据** (工作日 10:00-12:00 时段):
 
 | 日期 | 时段 | 成功率 | P99延迟 |
 |------|------|--------|---------|
@@ -205,9 +208,10 @@ P99延迟基线计算:
 - 置信度: 95%
 - 计算方法: 均值 ± 1.96 * 标准差
 
----
-
-### Step 4: 异常检测与置信度评估
+---`
+    },
+    { // Step 4
+        input: `### Step 4: 异常检测与置信度评估
 
 **Skill**: \`anomaly_detector\`
 
@@ -220,9 +224,8 @@ baseline:
   success_rate_range: [99.31%, 99.75%]
   p99_latency_range: [247ms, 275ms]
 detection_method: statistical_significance
-\`\`\`
-
-**异常检测计算**:
+\`\`\``,
+        output: `**异常检测计算**:
 
 \`\`\`
 成功率异常评分:
@@ -253,9 +256,10 @@ Z-Score = (924 - 261) / 7.2 = 92.1σ
 - 显著性水平: α = 0.05
 - 异常阈值: 3σ
 
----
-
-### Step 5: 深度错误分析
+---`
+    },
+    { // Step 5
+        input: `### Step 5: 深度错误分析
 
 **Skill**: \`error_analyzer\`
 
@@ -278,9 +282,8 @@ analysis_type: error_distribution
       APPROX_DISTINCT(user_id) as affected_users
   | GROUP BY http_status
   | ORDER BY error_count DESC
-\`\`\`
-
-**错误分布详情**:
+\`\`\``,
+        output: `**错误分布详情**:
 
 | 错误码 | 错误数量 | 占比 | 影响用户数 | 错误含义 |
 |--------|---------|------|-----------|----------|
@@ -306,7 +309,8 @@ analysis_type: error_distribution
       COUNT(*) as error_count
   | GROUP BY time_5min
   | ORDER BY time_5min
-\`\`\`
+\`\`\``,
+        output: `**历史基线数据** (工作日 10:00-12:00 时段):
 
 | 时间 | 错误数/5分钟 |
 |------|-------------|
@@ -325,15 +329,15 @@ analysis_type: error_distribution
 - 粒度: 5分钟
 - 查询ID: \`query-20241111-143025-d1a6e5\`
 
----
-
-### Step 6: 根因线索推理
+---`
+    },
+    { // Step 6
+        input: `### Step 6: 根因线索推理
 
 **Skill**: \`root_cause_reasoner\`
 
-**推理过程**:
-
-**证据1**: 500错误占主导地位 (65.2%)
+**推理过程**:`,
+        output: `**证据1**: 500错误占主导地位 (65.2%)
 - 来源: [错误分布查询结果]
 - 含义: 指向应用层处理异常，而非网络或客户端问题
 
@@ -379,7 +383,10 @@ P99延迟 924ms (正常261ms, 增长254%)
 1. 分布式追踪 (OpenTelemetry/SkyWalking) → 可精确定位慢在哪个环节
 2. 应用日志 (application.log) → 可查看详细错误堆栈
 3. MySQL/Redis 监控 → 可排查数据库性能问题
-4. 下游服务监控 → 可确认支付网关等服务状态`;
+4. 下游服务监控 → 可确认支付网关等服务状态`
+    }
+];
+
 
 const InspectionView: React.FC<{
     messages: MessageType[];
@@ -398,6 +405,8 @@ const InspectionView: React.FC<{
         scrollToBottom();
     }, [messages, isAnalyzing]);
 
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
     const handleSendMessage = async (prompt: string) => {
         if (!prompt.trim() || isAnalyzing) return;
 
@@ -406,7 +415,7 @@ const InspectionView: React.FC<{
 
         const assistantMessageTemplate: AssistantMessage = {
             role: 'assistant',
-            thoughtProcess: thoughtProcessText,
+            thoughtProcess: thoughtProcessPreamble,
             steps: [],
         };
 
@@ -414,20 +423,52 @@ const InspectionView: React.FC<{
         setIsAnalyzing(true);
 
         try {
-            const allSteps: MessageStep[] = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'report'];
-            
-            for (let i = 0; i < allSteps.length; i++) {
-                await new Promise(resolve => setTimeout(resolve, 600)); // Delay for each step
+            for (const step of thoughtProcessSteps) {
+                // Show Input
                 setMessages(prev => {
                     const newMessages = [...prev];
                     const lastMessage = newMessages[newMessages.length - 1];
                     if (lastMessage.role === 'assistant') {
-                       const updatedMessage = { ...lastMessage, steps: allSteps.slice(0, i + 1) };
+                        const updatedMessage = {
+                            ...lastMessage,
+                            thoughtProcess: (lastMessage.thoughtProcess || '') + '\n\n' + step.input,
+                        };
+                        newMessages[newMessages.length - 1] = updatedMessage;
+                    }
+                    return newMessages;
+                });
+                await delay(1000 + Math.random() * 1000); // 1-2 seconds delay
+
+                // Show Output
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMessage = newMessages[newMessages.length - 1];
+                    if (lastMessage.role === 'assistant') {
+                         const updatedMessage = {
+                            ...lastMessage,
+                            thoughtProcess: (lastMessage.thoughtProcess || '') + '\n\n' + step.output,
+                        };
                        newMessages[newMessages.length - 1] = updatedMessage;
                     }
                     return newMessages;
                 });
+
+                // Wait before next step
+                 await delay(3000 + Math.random() * 3000); // 3-6 seconds delay
             }
+            
+            // Signal report generation
+            setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage.role === 'assistant') {
+                   // FIX: Cast 'report' to MessageStep to satisfy the type requirement of AssistantMessage.steps.
+                   const updatedMessage = { ...lastMessage, steps: ['report' as MessageStep] };
+                   newMessages[newMessages.length - 1] = updatedMessage;
+                }
+                return newMessages;
+            });
+
 
         } catch (error) {
             console.error("Error during analysis:", error);
@@ -435,7 +476,9 @@ const InspectionView: React.FC<{
                  const newMessages = [...prev];
                  const lastMessage = newMessages[newMessages.length-1];
                  if(lastMessage.role === 'assistant') {
-                    lastMessage.steps = ['report']; // Use report to show error
+                    // FIX: Cast 'report' to MessageStep and follow immutable update pattern.
+                    const updatedMessage = { ...lastMessage, steps: ['report' as MessageStep] }; // Use report to show error
+                    newMessages[newMessages.length - 1] = updatedMessage;
                  }
                  return newMessages;
             });
