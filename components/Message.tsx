@@ -320,27 +320,6 @@ const Message: React.FC<MessageProps> = ({ message }) => {
                 <BatIcon className="w-5 h-5 text-white" />
             </div>
             <div className="w-full max-w-2xl space-y-4">
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <h3 className="font-semibold text-gray-800 mb-3">
-                         {showReport ? '分析完成' : '智能分析中...'}
-                    </h3>
-                    <div className="space-y-3">
-                        {message.steps.map((stepId, index) => {
-                            const content = stepContent[stepId];
-                            if (!content) return null;
-                            return (
-                                <div key={index} className="flex items-center gap-3 fade-in">
-                                    <div className="flex-shrink-0">{content.icon}</div>
-                                    <div>
-                                        <p className="font-medium text-sm text-gray-700">{content.title}</p>
-                                        <p className="text-xs text-gray-500">{content.description}</p>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-                
                 {message.thoughtProcess && (
                     <details className="border border-gray-200 rounded-xl overflow-hidden bg-white" open={!showReport}>
                         <summary className="px-4 py-3 bg-gray-50 cursor-pointer font-semibold text-sm text-gray-700 flex justify-between items-center hover:bg-gray-100 list-none group">
