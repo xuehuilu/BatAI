@@ -52,28 +52,106 @@ const thoughtProcessPreambleDefault = `**巡检时间**: 2024-11-11 14:30:00
 
 const thoughtProcessStepsDefault = [
     { 
-        input: `### Step 1: 连接阿里云 SLS 数据源...`,
-        output: `**执行结果**: ✓ 连接成功...`
+        input: `### Step 1: 连接阿里云 SLS 数据源
+
+**Skill**: \`datasource_connector\`
+        
+**调用参数**:
+\`\`\`yaml
+type: aliyun_sls
+target: online-payment-prod/nginx-access-log
+\`\`\``,
+        output: `**执行结果**: ✓ 连接成功。`
     },
     {
-        input: `### Step 2: 构建查询语句并提取关键指标...`,
-        output: `**查询执行结果**: 关键时段数据...`
+        input: `### Step 2: 构建查询语句并提取关键指标
+
+**Skill**: \`sls_query\`
+        
+**调用参数**:
+\`\`\`yaml
+project: online-payment-prod
+logstore: nginx-access-log
+query: >
+  request_uri:"/api/payment/submit" | 
+  select 
+    date_format(from_unixtime(__time__ - __time__ % 300), '%H:%i') as time,
+    round(sum(case when status < 500 then 1 else 0 end) * 1.0 / count(1) * 100, 2) as success_rate,
+    approx_percentile(request_time, 0.99) as p99_latency
+  group by time
+  order by time
+  limit 1000
+\`\`\``,
+        output: `**查询执行结果**:
+- 成功提取最近24小时内每5分钟的 **成功率** 和 **P99延迟** 数据点。
+- 发现 10:10 - 11:30 期间指标异常。
+`
     },
     {
-        input: `### Step 3: 学习历史基线...`,
-        output: `**历史基线数据**: 成功率正常范围: **99.31% ~ 99.75%**...`
+        input: `### Step 3: 学习历史基线
+
+**Skill**: \`baseline_analyzer\`
+        
+**调用参数**:
+\`\`\`yaml
+metric: success_rate, p99_latency
+historical_data_window: 14d
+algorithm: Holt-Winters
+\`\`\``,
+        output: `**历史基线数据 (基于过去14天)**:
+- **成功率正常范围**: 99.31% ~ 99.75%
+- **P99延迟正常范围**: 150ms ~ 320ms`
     },
     {
-        input: `### Step 4: 异常检测与置信度评估...`,
-        output: `**异常判定结果**: ⚠️ **成功率异常**, ⚠️ **延迟异常**...`
+        input: `### Step 4: 异常检测与置信度评估
+
+**Skill**: \`anomaly_detector\`
+        
+**调用参数**:
+\`\`\`yaml
+current_value (success_rate): 97.0%
+baseline_range (success_rate): [99.31, 99.75]
+current_value (p99_latency): 924ms
+baseline_range (p99_latency): [150, 320]
+\`\`\``,
+        output: `**异常判定结果**:
+- ⚠️ **成功率异常**: 当前值 97.0% 远低于基线范围。 (置信度: 99.8%)
+- ⚠️ **延迟异常**: 当前值 924ms 远高于基线范围。 (置信度: 99.9%)`
     },
     {
-        input: `### Step 5: 深度错误分析...`,
-        output: `**错误分布详情**: 500错误占65.2%...`
+        input: `### Step 5: 深度错误分析
+
+**Skill**: \`sls_query\`
+        
+**调用参数**:
+\`\`\`yaml
+project: online-payment-prod
+logstore: nginx-access-log
+query: >
+  request_uri:"/api/payment/submit" and status >= 500
+  and __time__ > now() - 1h | 
+  select status, count(1) as error_count
+  group by status
+  order by error_count desc
+\`\`\``,
+        output: `**错误分布详情 (过去1小时)**:
+- **500 Internal Server Error**: 4,281次 (占比 65.2%)
+- **504 Gateway Timeout**: 1,895次 (占比 28.9%)
+- **502 Bad Gateway**: 389次 (占比 5.9%)`
     },
     {
-        input: `### Step 6: 根因线索推理...`,
-        output: `**综合推断**: 可能是缴费接口依赖的某个下游服务出现性能问题或故障...`
+        input: `### Step 6: 根因线索推理
+
+**Skill**: \`log_based_reasoner\`
+        
+**推理过程**:`,
+        output: `**线索1 (500错误)**: 大量500错误通常表示应用内部代码执行出错或未处理的异常。
+**线索2 (504错误)**: 大量504错误表示上游服务（Nginx）等待后端应用响应超时。
+**线索3 (延迟激增)**: P99延迟飙升，与504超时现象吻合，表明后端处理请求非常缓慢。
+        
+**综合推断**:
+- 缴费接口依赖的某个下游服务（如账户、账单、支付网关等）出现性能问题或故障，导致接口处理缓慢，最终引发大量超时(504)和内部错误(500)。
+- **因缺少调用链数据，无法确定具体是哪个下游服务。**`
     }
 ];
 
@@ -201,7 +279,7 @@ const InspectionView: React.FC<{
         
         const isTraceConnected = connectedSources.includes('opentelemetry');
         const thoughtProcessPreamble = isTraceConnected ? thoughtProcessPreambleWithTrace : thoughtProcessPreambleDefault;
-        const thoughtProcessSteps = isTraceConnected ? thoughtProcessStepsWithTrace : thoughtProcessStepsDefault.map(s => ({...s, input: '...', output: '...'})); // Use full steps for trace, simplified for default for demo
+        const thoughtProcessSteps = isTraceConnected ? thoughtProcessStepsWithTrace : thoughtProcessStepsDefault;
 
         const assistantMessageTemplate: AssistantMessage = {
             role: 'assistant',
@@ -217,8 +295,8 @@ const InspectionView: React.FC<{
 
         try {
              // Simulate a more complex analysis when trace is connected
-            const baseStepDelay = isTraceConnected ? 2000 : 3000;
-            const randomStepDelay = isTraceConnected ? 2000 : 3000;
+            const baseStepDelay = isTraceConnected ? 2000 : 1500;
+            const randomStepDelay = isTraceConnected ? 2000 : 1500;
 
             for (const step of thoughtProcessSteps) {
                 // Show Input
@@ -234,7 +312,7 @@ const InspectionView: React.FC<{
                     }
                     return newMessages;
                 });
-                await delay(1000 + Math.random() * 1000);
+                await delay(500 + Math.random() * 500);
 
                 // Show Output
                 setMessages(prev => {
