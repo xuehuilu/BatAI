@@ -8,7 +8,6 @@ import { SearchIcon } from './icons/SearchIcon';
 interface SidebarProps {
     currentPage: Page;
     setCurrentPage: (page: Page) => void;
-    dataSourceConnected: boolean;
 }
 
 interface NavItemProps {
@@ -33,14 +32,10 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, onClick, disab
     </div>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, dataSourceConnected }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage }) => {
     
     const handleInspectionClick = () => {
-        if (dataSourceConnected) {
-            setCurrentPage('inspection');
-        } else {
-            alert('请先在数据集成中心连接一个数据源。');
-        }
+        setCurrentPage('inspection');
     };
 
     return (
@@ -69,7 +64,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, dataSour
                     label="智能巡检"
                     isActive={currentPage === 'inspection'}
                     onClick={handleInspectionClick}
-                    disabled={!dataSourceConnected}
                 />
             </nav>
         </aside>

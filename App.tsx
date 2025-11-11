@@ -13,8 +13,6 @@ function App() {
     const [messages, setMessages] = useState<MessageType[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-    const isDataSourceConnected = connectedSources.length > 0;
-
     const renderPage = () => {
         switch (currentPage) {
             case 'welcome':
@@ -45,7 +43,6 @@ function App() {
             <Sidebar
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
-                dataSourceConnected={isDataSourceConnected}
             />
             <div className="flex flex-1 flex-col overflow-hidden">
                 <TopBar
