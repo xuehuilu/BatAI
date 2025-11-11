@@ -1,121 +1,147 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageType, AssistantMessage, MessageStep } from '../types';
+
+import React, { useState, useEffect, useRef } from 'react';
+// FIX: Import GoogleGenAI and Type for API calls
+import { GoogleGenAI, Type } from "@google/genai";
+import { MessageType, AssistantMessage } from '../types';
 import EmptyState from './EmptyState';
 import Message from './Message';
 
-interface InspectionViewProps {
+// FIX: Define local icon components as new files cannot be added
+const SendIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "w-6 h-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+    </svg>
+);
+const SparklesIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "w-6 h-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.293 2.293a1 1 0 010 1.414L10 10l-2 2-2.828-2.828a1 1 0 010-1.414L7.464 5.464A1 1 0 018.172 5H9m6 6l2 2 2.828-2.828a1 1 0 000-1.414L17.536 10.5a1 1 0 00-1.414 0L15 12zm-4.879 4.879l-2 2-2.828-2.828a1 1 0 010-1.414L7.586 12.5a1 1 0 011.414 0L10.121 13.5z" />
+    </svg>
+);
+
+
+const InspectionView: React.FC<{
     messages: MessageType[];
     setMessages: React.Dispatch<React.SetStateAction<MessageType[]>>;
     isAnalyzing: boolean;
     setIsAnalyzing: React.Dispatch<React.SetStateAction<boolean>>;
-}
-
-const InspectionView: React.FC<InspectionViewProps> = ({ messages, setMessages, isAnalyzing, setIsAnalyzing }) => {
+}> = ({ messages, setMessages, isAnalyzing, setIsAnalyzing }) => {
     const [inputValue, setInputValue] = useState('');
-    const chatContainerRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     useEffect(() => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-        }
-    }, [messages]);
+        scrollToBottom();
+    }, [messages, isAnalyzing]);
 
-    const startInspection = (query: string) => {
-        const userMessage = { role: 'user' as const, content: query };
-        setMessages(prev => [...prev, userMessage]);
+    const handleSendMessage = async (prompt: string) => {
+        if (!prompt.trim() || isAnalyzing) return;
+
+        const newUserMessage: MessageType = { role: 'user', content: prompt };
+        setMessages(prev => [...prev, newUserMessage]);
         setInputValue('');
         setIsAnalyzing(true);
 
-        setTimeout(() => {
-            const assistantMessage: AssistantMessage = {
-                role: 'assistant',
-                steps: []
-            };
-            setMessages(prev => [...prev, assistantMessage]);
+        try {
+            // FIX: Initialize GoogleGenAI and call generateContent
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
             
-            const steps: { type: MessageStep, delay: number }[] = [
-                { type: 'step1', delay: 500 },
-                { type: 'step2', delay: 1500 },
-                { type: 'step3', delay: 2800 },
-                { type: 'step4', delay: 3500 },
-                { type: 'step5', delay: 4200 },
-                { type: 'report', delay: 5000 }
-            ];
-
-            steps.forEach(({ type, delay }) => {
-                setTimeout(() => {
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        const lastMsg = newMessages[newMessages.length - 1];
-                        if (lastMsg.role === 'assistant') {
-                            lastMsg.steps = [...lastMsg.steps, type];
-                        }
-                        return newMessages;
-                    });
-                    
-                    if (type === 'report') {
-                        setIsAnalyzing(false);
-                    }
-                }, delay);
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-pro',
+                contents: `Analyze the following user request for business inspection and return a JSON object with a 'steps' array. The steps should be one of 'step1', 'step2', 'step3', 'step4', 'step5', 'report'. User request: "${prompt}"`,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            steps: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.STRING,
+                                },
+                            },
+                        },
+                        required: ['steps'],
+                    },
+                },
             });
-        }, 200);
+
+            // FIX: Use response.text to get the generated text
+            const jsonResponse = response.text;
+            const parsed = JSON.parse(jsonResponse);
+
+            if (parsed.steps && Array.isArray(parsed.steps)) {
+                const newAssistantMessage: AssistantMessage = {
+                    role: 'assistant',
+                    steps: parsed.steps,
+                };
+                setMessages(prev => [...prev, newAssistantMessage]);
+            } else {
+                 throw new Error("Invalid response format from AI.");
+            }
+        } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            const errorMessage: AssistantMessage = {
+                role: 'assistant',
+                steps: ['report'], // Use report step to show an error message
+            };
+            setMessages(prev => [...prev, errorMessage]);
+
+        } finally {
+            setIsAnalyzing(false);
+        }
     };
 
-    const handleSend = () => {
-        if (inputValue.trim() && !isAnalyzing) {
-            startInspection(inputValue);
-        }
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleSendMessage(inputValue);
+    };
+    
+    const handlePromptSuggestion = (prompt: string) => {
+        handleSendMessage(prompt);
     };
 
     return (
         <div className="flex flex-col h-full bg-white">
-            <div className="flex-1 overflow-y-auto p-6" ref={chatContainerRef}>
-                <div className="max-w-4xl mx-auto">
-                    {messages.length === 0 ? (
-                        <EmptyState onQuickAction={startInspection} />
-                    ) : (
-                        messages.map((msg, index) => (
-                            <Message key={index} message={msg} />
-                        ))
-                    )}
-                </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-200 bg-white">
-                <div className="max-w-4xl mx-auto">
-                     <div className="flex gap-2 mb-3 flex-wrap">
-                        <button 
-                            onClick={() => startInspection('巡检核心业务API的健康状况')}
-                            disabled={isAnalyzing}
-                            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            🔍 巡检核心 API
-                        </button>
-                     </div>
-                    <div className="flex gap-4 items-end">
-                        <textarea
-                            className="flex-1 p-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#667eea] focus:border-transparent outline-none"
-                            placeholder="请描述您想巡检的内容..."
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSend();
-                                }
-                            }}
-                            rows={1}
-                            style={{minHeight: '44px', maxHeight: '150px'}}
-                        />
-                        <button
-                            onClick={handleSend}
-                            disabled={!inputValue.trim() || isAnalyzing}
-                            className="px-6 py-2.5 bg-[#667eea] text-white rounded-lg font-semibold text-sm hover:bg-[#5a67d8] disabled:bg-gray-300 disabled:cursor-not-allowed"
-                        >
-                            发送
-                        </button>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {messages.length === 0 ? (
+                    <EmptyState onPromptSuggestion={handlePromptSuggestion} />
+                ) : (
+                    messages.map((msg, index) => <Message key={index} message={msg} />)
+                )}
+                {isAnalyzing && (
+                     <div className="flex items-start gap-4">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center flex-shrink-0">
+                            <SparklesIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="bg-gray-100 rounded-xl p-4 animate-pulse w-full max-w-lg">
+                            <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                            <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                        </div>
                     </div>
-                </div>
+                )}
+                <div ref={messagesEndRef} />
+            </div>
+            <div className="p-4 border-t border-gray-200 bg-white">
+                <form onSubmit={handleFormSubmit} className="relative">
+                    <input
+                        type="text"
+                        value={inputValue}
+                        onChange={e => setInputValue(e.target.value)}
+                        placeholder="例如：分析一下过去1小时 API 成功率有没有异常..."
+                        className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#667eea] focus:border-transparent outline-none transition"
+                        disabled={isAnalyzing}
+                    />
+                    <button
+                        type="submit"
+                        disabled={!inputValue.trim() || isAnalyzing}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-[#667eea] text-white hover:bg-[#5a67d8] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <SendIcon className="w-5 h-5" />
+                    </button>
+                </form>
             </div>
         </div>
     );
