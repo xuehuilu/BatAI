@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Page } from '../types';
 import { BatIcon } from './icons/BatIcon';
@@ -40,7 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, dataSour
         if (dataSourceConnected) {
             setCurrentPage('inspection');
         } else {
-            alert('Please connect a data source in the Integration Center first.');
+            alert('请先在数据集成中心连接一个数据源。');
         }
     };
 
@@ -55,19 +54,19 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, dataSour
             <nav>
                 <NavItem
                     icon={<HomeIcon className="w-5 h-5" />}
-                    label="Home"
+                    label="首页"
                     isActive={currentPage === 'welcome'}
                     onClick={() => setCurrentPage('welcome')}
                 />
                 <NavItem
                     icon={<PlugIcon className="w-5 h-5" />}
-                    label="Data Integration"
+                    label="数据集成"
                     isActive={currentPage === 'datasource'}
                     onClick={() => setCurrentPage('datasource')}
                 />
                 <NavItem
                     icon={<SearchIcon className="w-5 h-5" />}
-                    label="Smart Inspection"
+                    label="智能巡检"
                     isActive={currentPage === 'inspection'}
                     onClick={handleInspectionClick}
                     disabled={!dataSourceConnected}

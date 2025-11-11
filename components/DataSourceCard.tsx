@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DataSource } from '../types';
 import { SlsIcon } from './icons/SlsIcon';
@@ -32,7 +31,7 @@ const DataSourceCard: React.FC<DataSourceCardProps> = ({ source, onConfigure }) 
                     <h3 className="text-lg font-bold text-gray-800">{source.name}</h3>
                 </div>
                 <div className={`px-3 py-1 text-xs font-semibold rounded-full ${isConnected ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                    {isConnected ? 'Connected' : 'Available'}
+                    {isConnected ? '已连接' : '可用'}
                 </div>
             </div>
 
@@ -50,7 +49,7 @@ const DataSourceCard: React.FC<DataSourceCardProps> = ({ source, onConfigure }) 
                 onClick={onConfigure}
                 className={`w-full mt-auto px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 ${isConnected ? 'bg-green-600 text-white' : 'bg-[#667eea] hover:bg-[#5a67d8] text-white'}`}
             >
-                {isConnected ? '✓ Connected' : 'Configure Connection'}
+                {isConnected ? '✓ 已连接' : '配置连接'}
             </button>
         </div>
     );

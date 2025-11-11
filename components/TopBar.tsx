@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Page } from '../types';
 
@@ -9,9 +8,9 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ currentPage, connectedSourcesCount }) => {
     const pageTitles: Record<Page, string> = {
-        welcome: 'Welcome to BatAI',
-        datasource: 'Data Integration Center',
-        inspection: 'Smart Inspection'
+        welcome: '欢迎使用 BatAI',
+        datasource: '数据集成中心',
+        inspection: '智能巡检'
     };
 
     return (
@@ -23,7 +22,7 @@ const TopBar: React.FC<TopBarProps> = ({ currentPage, connectedSourcesCount }) =
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                     </span>
-                    <span>{connectedSourcesCount} data source{connectedSourcesCount > 1 ? 's' : ''} connected</span>
+                    <span>{connectedSourcesCount} 个数据源已连接</span>
                 </div>
             )}
         </header>

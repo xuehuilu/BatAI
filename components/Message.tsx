@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { MessageType } from '../types';
@@ -29,7 +28,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
             <div className="mb-8 flex justify-end">
                 <div className="max-w-xl">
                      <div className="flex items-center gap-3 mb-2 justify-end">
-                        <span className="text-sm font-semibold text-gray-700">You</span>
+                        <span className="text-sm font-semibold text-gray-700">您</span>
                         <div className="w-8 h-8 rounded-full bg-[#667eea] text-white flex items-center justify-center font-bold text-sm">
                             U
                         </div>
@@ -56,16 +55,16 @@ const Message: React.FC<MessageProps> = ({ message }) => {
             <div className="bg-white p-5 rounded-xl rounded-tl-none border border-gray-200 text-gray-800 text-sm leading-relaxed">
                 {steps.length > 0 && (
                     <div className="pb-4 border-b border-gray-200">
-                        <h4 className="font-semibold text-gray-600 mb-3 text-sm">Analysis Process</h4>
+                        <h4 className="font-semibold text-gray-600 mb-3 text-sm">分析过程</h4>
                         {steps.includes('step1') && (
                             <div className="mb-4 fade-in">
-                                <p className="font-semibold mb-1">1. Connecting Data Source</p>
-                                <p className="text-gray-600 text-xs">Connecting to Alibaba Cloud SLS... ✓ Success</p>
+                                <p className="font-semibold mb-1">1. 连接数据源</p>
+                                <p className="text-gray-600 text-xs">正在连接阿里云SLS... ✓ 成功</p>
                             </div>
                         )}
                          {steps.includes('step2') && (
                             <div className="mb-4 fade-in">
-                                <p className="font-semibold mb-1">2. Querying Access Log Data</p>
+                                <p className="font-semibold mb-1">2. 查询访问日志数据</p>
                                 <pre className="bg-gray-50 text-gray-700 p-2 rounded-md text-xs leading-normal mt-1 overflow-x-auto">
                                     <code>* | WHERE request_path = '/api/order/create'<br/>  | SELECT ... GROUP BY hour</code>
                                 </pre>
@@ -73,20 +72,20 @@ const Message: React.FC<MessageProps> = ({ message }) => {
                         )}
                          {steps.includes('step3') && (
                             <div className="mb-4 fade-in">
-                                <p className="font-semibold mb-1">3. Learning Historical Baseline</p>
-                                <p className="text-gray-600 text-xs">Calculated baseline: μ=99.4%, σ=0.13%</p>
+                                <p className="font-semibold mb-1">3. 学习历史基线</p>
+                                <p className="text-gray-600 text-xs">计算基线: μ=99.4%, σ=0.13%</p>
                             </div>
                         )}
                         {steps.includes('step4') && (
                              <div className="mb-4 fade-in">
-                                <p className="font-semibold mb-1">4. Anomaly Detection</p>
-                                <p className="text-gray-600 text-xs">Current success rate <span className="text-red-500 font-bold">97.8%</span> is below baseline threshold <span className="font-bold">99.15%</span>. Anomaly detected.</p>
+                                <p className="font-semibold mb-1">4. 异常检测</p>
+                                <p className="text-gray-600 text-xs">当前成功率 <span className="text-red-500 font-bold">97.8%</span> 低于基线阈值 <span className="font-bold">99.15%</span>。检测到异常。</p>
                             </div>
                         )}
                          {steps.includes('step5') && (
                             <div className="fade-in">
-                                <p className="font-semibold mb-1">5. Error Analysis</p>
-                                 <p className="text-gray-600 text-xs">Dominant error code: <span className="font-bold">500</span> (68% of errors).</p>
+                                <p className="font-semibold mb-1">5. 错误分析</p>
+                                 <p className="text-gray-600 text-xs">主要错误码: <span className="font-bold">500</span> (占错误的68%)。</p>
                             </div>
                         )}
                     </div>
@@ -94,26 +93,26 @@ const Message: React.FC<MessageProps> = ({ message }) => {
 
                 {steps.includes('report') && (
                     <div className="pt-5 fade-in">
-                        <h3 className="font-bold text-base mb-3">Inspection Report</h3>
+                        <h3 className="font-bold text-base mb-3">巡检报告</h3>
                         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-lg mb-4 text-sm">
-                            <strong>Key Finding:</strong> The order creation API success rate dropped significantly to 97.8% (baseline ~99.4%) between 10:00-14:00, primarily due to an increase in 500 errors.
+                            <strong>核心发现：</strong> 在 10:00-14:00 期间，订单创建 API 的成功率显著下降至 97.8% (基线约为99.4%)，主要原因是 500 错误的增加。
                         </div>
 
                         <div className="grid grid-cols-3 gap-4 my-5 text-center">
                             <div>
-                                <p className="text-xs text-gray-500">Success Rate</p>
+                                <p className="text-xs text-gray-500">成功率</p>
                                 <p className="text-2xl font-bold text-red-500">97.8%</p>
-                                <p className="text-xs text-red-500 font-semibold">↓ 1.6% vs Baseline</p>
+                                <p className="text-xs text-red-500 font-semibold">↓ 1.6% vs 基线</p>
                             </div>
                              <div>
-                                <p className="text-xs text-gray-500">P99 Latency</p>
+                                <p className="text-xs text-gray-500">P99 延迟</p>
                                 <p className="text-2xl font-bold">342ms</p>
-                                <p className="text-xs text-red-500 font-semibold">↑ 89ms vs Baseline</p>
+                                <p className="text-xs text-red-500 font-semibold">↑ 89ms vs 基线</p>
                             </div>
                              <div>
-                                <p className="text-xs text-gray-500">Affected Requests</p>
+                                <p className="text-xs text-gray-500">影响请求数</p>
                                 <p className="text-2xl font-bold">2,847</p>
-                                <p className="text-xs text-gray-500">Past 1 hour</p>
+                                <p className="text-xs text-gray-500">过去1小时</p>
                             </div>
                         </div>
 
@@ -125,18 +124,18 @@ const Message: React.FC<MessageProps> = ({ message }) => {
                                     <YAxis domain={['dataMin - 1', 'dataMax + 0.5']} tick={{ fontSize: 10 }} />
                                     <Tooltip wrapperClassName="text-xs !bg-white !border-gray-300 !rounded-md" />
                                     <Legend wrapperStyle={{fontSize: "12px"}}/>
-                                    <Line type="monotone" dataKey="baseline" stroke="#8884d8" strokeWidth={2} dot={false} name="Historical Baseline" />
-                                    <Line type="monotone" dataKey="current" stroke="#ef4444" strokeWidth={2} dot={false} name="Current Data" />
+                                    <Line type="monotone" dataKey="baseline" stroke="#8884d8" strokeWidth={2} dot={false} name="历史基线" />
+                                    <Line type="monotone" dataKey="current" stroke="#ef4444" strokeWidth={2} dot={false} name="当前数据" />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
                         
                         <div className="mt-5">
-                            <h4 className="font-bold mb-1">Recommended Actions:</h4>
+                            <h4 className="font-bold mb-1">建议操作：</h4>
                             <ol className="list-decimal list-inside text-gray-700 space-y-1">
-                                <li>Immediately investigate 500 error logs for the order service.</li>
-                                <li>Check the health status of downstream dependencies.</li>
-                                <li>Consider integrating distributed tracing for precise problem localization.</li>
+                                <li>立即排查订单服务的 500 错误日志。</li>
+                                <li>检查下游依赖服务的健康状况。</li>
+                                <li>考虑集成分布式追踪以进行精确的问题定位。</li>
                             </ol>
                         </div>
                     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageType, AssistantMessage, MessageStep } from '../types';
 import EmptyState from './EmptyState';
@@ -86,17 +85,17 @@ const InspectionView: React.FC<InspectionViewProps> = ({ messages, setMessages, 
                 <div className="max-w-4xl mx-auto">
                      <div className="flex gap-2 mb-3 flex-wrap">
                         <button 
-                            onClick={() => startInspection('Inspect the health of core business APIs')}
+                            onClick={() => startInspection('巡检核心业务API的健康状况')}
                             disabled={isAnalyzing}
                             className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            🔍 Inspect Core APIs
+                            🔍 巡检核心 API
                         </button>
                      </div>
                     <div className="flex gap-4 items-end">
                         <textarea
                             className="flex-1 p-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#667eea] focus:border-transparent outline-none"
-                            placeholder="Describe what you want to inspect..."
+                            placeholder="请描述您想巡检的内容..."
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyPress={(e) => {
@@ -113,7 +112,7 @@ const InspectionView: React.FC<InspectionViewProps> = ({ messages, setMessages, 
                             disabled={!inputValue.trim() || isAnalyzing}
                             className="px-6 py-2.5 bg-[#667eea] text-white rounded-lg font-semibold text-sm hover:bg-[#5a67d8] disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
-                            Send
+                            发送
                         </button>
                     </div>
                 </div>
