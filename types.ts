@@ -12,7 +12,7 @@ export type DataSource = {
   category: 'required' | 'recommended';
 };
 
-export type MessageStep = 'step1' | 'step2' | 'step3' | 'step4' | 'step5' | 'report';
+export type MessageStep = 'step1' | 'step2' | 'step3' | 'step4' | 'step5' | 'step6' | 'report';
 
 export type UserMessage = {
   role: 'user';
@@ -22,6 +22,7 @@ export type UserMessage = {
 export type AssistantMessage = {
   role: 'assistant';
   steps: MessageStep[];
+  thoughtProcess?: string;
 };
 
 export type MessageType = UserMessage | AssistantMessage;

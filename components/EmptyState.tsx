@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BatIcon } from './icons/BatIcon';
 import { SearchIcon } from './icons/SearchIcon';
@@ -9,9 +8,9 @@ interface EmptyStateProps {
 
 const EmptyState: React.FC<EmptyStateProps> = ({ onPromptSuggestion }) => {
     const suggestions = [
-        '过去1小时 API 成功率有没有异常？',
-        '检查一下用户登录接口的 RT 变化',
-        '支付失败的错误码有哪些？',
+        '巡检‘网上国网APP缴费功能’健康状况',
+        '分析近30分钟缴费失败的主要原因',
+        '江苏地区营销活动是否影响了缴费接口性能？',
     ];
 
     return (
