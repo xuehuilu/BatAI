@@ -1,8 +1,7 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { MessageType, MessageStep } from '../types';
 import { BatIcon } from './icons/BatIcon';
+import TypewriterMarkdown from './TypewriterMarkdown';
 
 // Local Icon Definitions
 const UserIcon = ({ className }: { className?: string }) => (
@@ -255,45 +254,9 @@ const reportMarkdown = `## 三、巡检报告总结
 - 可用于复现分析或审计
 `;
 
-const MarkdownContent = ({ content }: { content: string }) => {
-    return (
-        <ReactMarkdown
-            children={content}
-            remarkPlugins={[remarkGfm]}
-            components={{
-                h2: ({ node, ...props }) => <h2 className="text-xl font-semibold mt-6 mb-3 border-b pb-2" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
-                p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-4 pl-4 space-y-1" {...props} />,
-                ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-4 pl-4 space-y-1" {...props} />,
-                li: ({ node, ...props }) => <li className="pl-2" {...props} />,
-                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4 text-gray-600" {...props} />,
-                // FIX: The `inline` prop is deprecated in recent versions of `react-markdown`.
-                // The modern way to distinguish between inline and block code is to check for a `language-*` className.
-                code: ({ node, className, children, ...props }) => {
-                    const match = /language-(\w+)/.exec(className || '');
-                    return match ? (
-                        <pre className="bg-gray-800 text-white p-4 rounded-md my-4 overflow-x-auto"><code className="text-sm font-mono" {...props}>{children}</code></pre>
-                    ) : (
-                        <code className="bg-gray-200 text-gray-800 rounded px-1.5 py-1 text-sm font-mono" {...props}>{children}</code>
-                    );
-                },
-                table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse border border-gray-300" {...props} /></div>,
-                thead: ({ node, ...props }) => <thead className="bg-gray-100" {...props} />,
-                tr: ({ node, ...props }) => <tr className="border-b border-gray-200" {...props} />,
-                th: ({ node, ...props }) => <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-sm" {...props} />,
-                td: ({ node, ...props }) => <td className="border border-gray-300 px-4 py-2 text-sm" {...props} />,
-                strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
-                hr: ({ node, ...props }) => <hr className="my-6 border-gray-200" {...props} />,
-            }}
-        />
-    );
-};
-
-
 const AnalysisReport: React.FC = () => (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-        <MarkdownContent content={reportMarkdown} />
+        <TypewriterMarkdown content={reportMarkdown} />
     </div>
 );
 
@@ -327,7 +290,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
                             <ChevronDownIcon className="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform"/>
                         </summary>
                         <div className="p-4 border-t border-gray-200 text-sm text-gray-700">
-                           <MarkdownContent content={message.thoughtProcess} />
+                           <TypewriterMarkdown content={message.thoughtProcess} />
                         </div>
                     </details>
                 )}

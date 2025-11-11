@@ -283,6 +283,7 @@ analysis_type: error_distribution
   | GROUP BY http_status
   | ORDER BY error_count DESC
 \`\`\``,
+        // FIX: Merged duplicate `output` properties into one.
         output: `**错误分布详情**:
 
 | 错误码 | 错误数量 | 占比 | 影响用户数 | 错误含义 |
@@ -309,8 +310,9 @@ analysis_type: error_distribution
       COUNT(*) as error_count
   | GROUP BY time_5min
   | ORDER BY time_5min
-\`\`\``,
-        output: `**历史基线数据** (工作日 10:00-12:00 时段):
+\`\`\`
+
+**错误时间分布详情** (5分钟粒度):
 
 | 时间 | 错误数/5分钟 |
 |------|-------------|
