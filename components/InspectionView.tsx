@@ -16,147 +16,204 @@ const SparklesIcon = ({ className }: { className?: string }) => (
 );
 
 
-// --- Scenario 1: SLS Only ---
-const thoughtProcessPreambleDefault = `**巡检时间**: 2024-11-11 14:30:00  
-**分析周期**: 过去24小时 (2024-11-10 14:30 ~ 2024-11-11 14:30)  
-**巡检目标**: \`/api/payment/submit\` 缴费提交接口
+// --- Scenario 1: SLS Only (Healthy Check) ---
+const thoughtProcessPreambleDefault = `开始对缴费提交接口进行日常健康巡检...
 
----
+**分析目标**:
+- 评估接口整体健康状态
+- 学习业务的正常行为模式
+- 建立性能基线
+- 识别潜在的优化空间
 
-## 一、分析过程
-
-### 思考过程
-
-**目标**: 巡检网上国网APP的核心缴费业务接口健康状态
-
-**分析策略**:
-1.  首先连接数据源，获取缴费接口的访问日志
-2.  提取关键指标：成功率、响应时间、错误码分布
-3.  学习历史基线，识别"什么是正常"
-4.  对比当前数据与历史基线，检测异常
-5.  深入分析错误分布，寻找根因线索
-6.  生成结构化报告并给出操作建议
-
-**数据完整度评估**:
-- ✅ 已接入: 应用层访问日志 (access.log)
-- ❌ 未接入: 分布式追踪数据
+**数据评估**:
+- ✅ 已接入: Nginx 访问日志
+- ❌ 未接入: 分布式追踪
+- ❌ 未接入: 应用详细日志
 - ❌ 未接入: 数据库监控
-- ❌ 未接入: 下游依赖服务监控
 
-**分析能力预期**: 基于单一数据源，可以发现问题表象，但无法精确定位根因。
+**当前分析能力**: 基于访问日志，可以分析接口的可用性、性能表现和流量特征。无法深入到服务内部和下游依赖分析。
 
 ---
 
-## 二、Skills 调用过程
-`;
+## 二、Skills 调用过程`;
 
 const thoughtProcessStepsDefault = [
-    { 
-        input: `### Step 1: 连接阿里云 SLS 数据源
+    {
+        input: `### Step 1: 连接数据源
 
-**Skill**: \`datasource_connector\`
-        
-**调用参数**:
-\`\`\`yaml
-type: aliyun_sls
-target: online-payment-prod/nginx-access-log
+**Skill**: \`sls_connector\`
+
+**执行过程**:
+\`\`\`
+正在连接阿里云 SLS...
+Endpoint: cn-beijing.log.aliyuncs.com
+Project: sgcc-production-logs
+Logstore: nginx-access-log
 \`\`\``,
-        output: `**执行结果**: ✓ 连接成功。`
+        output: `**连接结果**:
+\`\`\`
+✓ 连接成功
+✓ 数据源可访问
+✓ 最新日志时间: 2024-11-11 14:29:58
+✓ 日志格式验证通过
+\`\`\``
     },
     {
-        input: `### Step 2: 构建查询语句并提取关键指标
+        input: `### Step 2: 提取关键业务指标
 
-**Skill**: \`sls_query\`
-        
-**调用参数**:
-\`\`\`yaml
-project: online-payment-prod
-logstore: nginx-access-log
-query: >
-  request_uri:"/api/payment/submit" | 
-  select 
-    date_format(from_unixtime(__time__ - __time__ % 300), '%H:%i') as time,
-    round(sum(case when status < 500 then 1 else 0 end) * 1.0 / count(1) * 100, 2) as success_rate,
-    approx_percentile(request_time, 0.99) as p99_latency
-  group by time
-  order by time
-  limit 1000
+**Skill**: \`sls_query_builder\`
+
+**查询目标**: 提取缴费接口的成功率、响应时间、流量分布
+
+**生成的查询语句**:
+\`\`\`sql
+* | WHERE request_path = '/api/payment/submit'
+    AND __time__ >= from_unixtime(1731225000)
+    AND __time__ < from_unixtime(1731311400)
+  | SELECT 
+      date_format(__time__, '%Y-%m-%d %H:00') as time_bucket,
+      COUNT(*) as total_requests,
+      COUNT_IF(http_status < 500) as success_requests,
+      ROUND(COUNT_IF(http_status < 500) * 100.0 / COUNT(*), 2) as success_rate,
+      APPROX_PERCENTILE(response_time, 0.50) as p50_latency,
+      APPROX_PERCENTILE(response_time, 0.95) as p95_latency,
+      APPROX_PERCENTILE(response_time, 0.99) as p99_latency,
+      COUNT_IF(http_status = 500) as error_500,
+      COUNT_IF(http_status = 502) as error_502,
+      COUNT_IF(http_status = 504) as error_504
+  | GROUP BY time_bucket
+  | ORDER BY time_bucket
 \`\`\``,
-        output: `**查询执行结果**:
-- 成功提取最近24小时内每5分钟的 **成功率** 和 **P99延迟** 数据点。
-- 发现 10:10 - 11:30 期间指标异常。
-`
+        output: `**查询执行**:
+\`\`\`
+扫描日志: 2,456,789 条
+处理时间: 2.8 秒
+匹配记录: 458,234 条
+\`\`\`
+
+**24小时数据概览** (每小时统计):
+
+| 时间段 | 请求量 | 成功率 | P50延迟 | P95延迟 | P99延迟 | 500错误 |
+|--------|--------|--------|---------|---------|---------|---------|
+| 11-10 15:00 | 12,345 | 99.6% | 87ms | 156ms | 234ms | 8 |
+| 11-10 16:00 | 14,567 | 99.5% | 92ms | 168ms | 245ms | 12 |
+| ... | ... | ... | ... | ... | ... | ... |
+| 11-11 12:00 | 31,234 | 99.6% | 91ms | 170ms | 243ms | 11 |
+| 11-11 13:00 | 26,890 | 99.6% | 88ms | 164ms | 236ms | 9 |
+| 11-11 14:00 | 21,123 | 99.5% | 92ms | 172ms | 244ms | 12 |
+
+**数据来源**: 阿里云 SLS - \`sgcc-production-logs/nginx-access-log\`  
+**查询ID**: \`query-20241111-143018-f8a3b5\``
     },
     {
         input: `### Step 3: 学习历史基线
 
-**Skill**: \`baseline_analyzer\`
-        
-**调用参数**:
+**Skill**: \`baseline_learning\`
+
+**学习目标**: 分析最近7天的工作日数据，建立正常行为基线
+
+**学习参数**:
 \`\`\`yaml
-metric: success_rate, p99_latency
-historical_data_window: 14d
-algorithm: Holt-Winters
+algorithm: time_series_baseline
+training_window: 7_days
+time_matching: weekday_hour_match
+confidence_interval: 0.95
+exclude_anomalies: true
 \`\`\``,
-        output: `**历史基线数据 (基于过去14天)**:
-- **成功率正常范围**: 99.31% ~ 99.75%
-- **P99延迟正常范围**: 150ms ~ 320ms`
+        output: `**历史数据查询**:
+\`\`\`sql
+* | WHERE request_path = '/api/payment/submit'
+    AND __time__ >= from_unixtime(1730620200)  -- 7天前
+    AND __time__ < from_unixtime(1731225000)
+    AND dayofweek(__time__) BETWEEN 2 AND 6  -- 工作日
+  | SELECT 
+      date_format(__time__, '%Y-%m-%d %H:00') as time_bucket,
+      ROUND(COUNT_IF(http_status < 500) * 100.0 / COUNT(*), 2) as success_rate,
+      APPROX_PERCENTILE(response_time, 0.99) as p99_latency,
+      COUNT(*) as request_count
+  | GROUP BY time_bucket
+  | ORDER BY time_bucket
+\`\`\`
+**基线学习结果**:
+\`\`\`
+全天整体基线:
+├─ 成功率: 99.6% (范围: 99.3% - 99.8%)
+├─ P99延迟: 240ms (范围: 225ms - 255ms)
+└─ 日均请求量: 458,234 次
+\`\`\`
+
+**基线特征分析**:
+✓ **稳定性良好**: 成功率始终保持在 99.3% 以上  
+✓ **性能稳定**: P99延迟波动范围小 (±15ms)  
+✓ **流量规律**: 明显的工作时段高峰模式`
     },
     {
-        input: `### Step 4: 异常检测与置信度评估
+        input: `### Step 4: 当前数据与基线对比
 
-**Skill**: \`anomaly_detector\`
-        
-**调用参数**:
-\`\`\`yaml
-current_value (success_rate): 97.0%
-baseline_range (success_rate): [99.31, 99.75]
-current_value (p99_latency): 924ms
-baseline_range (p99_latency): [150, 320]
-\`\`\``,
-        output: `**异常判定结果**:
-- ⚠️ **成功率异常**: 当前值 97.0% 远低于基线范围。 (置信度: 99.8%)
-- ⚠️ **延迟异常**: 当前值 924ms 远高于基线范围。 (置信度: 99.9%)`
+**Skill**: \`baseline_comparator\``,
+        output: `**对比分析**:
+
+**整体健康度评分**: ⭐⭐⭐⭐⭐ 5.0/5.0
+
+| 指标 | 当前值 | 基线范围 | 评估 | 说明 |
+|------|--------|---------|------|------|
+| 成功率 | 99.6% | 99.3%-99.8% | ✅ 正常 | 在预期范围内 |
+| P99延迟 | 242ms | 225ms-255ms | ✅ 正常 | 略高于均值但在范围内 |
+| 请求量 | 458,234 | 440,000-470,000 | ✅ 正常 | 符合工作日流量预期 |
+| 错误率 | 0.4% | 0.2%-0.7% | ✅ 正常 | 在正常波动范围 |
+
+**结论**: 表现与历史基线高度一致 ✓`
     },
     {
-        input: `### Step 5: 深度错误分析
+        input: `### Step 5: 流量特征分析
 
-**Skill**: \`sls_query\`
-        
-**调用参数**:
-\`\`\`yaml
-project: online-payment-prod
-logstore: nginx-access-log
-query: >
-  request_uri:"/api/payment/submit" and status >= 500
-  and __time__ > now() - 1h | 
-  select status, count(1) as error_count
-  group by status
-  order by error_count desc
-\`\`\``,
-        output: `**错误分布详情 (过去1小时)**:
-- **500 Internal Server Error**: 4,281次 (占比 65.2%)
-- **504 Gateway Timeout**: 1,895次 (占比 28.9%)
-- **502 Bad Gateway**: 389次 (占比 5.9%)`
+**Skill**: \`traffic_pattern_analyzer\``,
+        output: `**请求量时间分布**:
+\`\`\`
+高峰时段识别:
+├─ 上午高峰: 10:00-12:00 (平均 26,890 请求/小时)
+├─ 午间峰值: 12:00-13:00 (平均 31,234 请求/小时) 🔝
+└─ 晚间高峰: 19:00-21:00 (平均 29,456 请求/小时)
+
+周中模式:
+工作日流量稳定，午间12-13点是全天峰值
+符合"用户午休时间缴费"的行为特征
+\`\`\`
+**数据来源**: 基于24小时请求量统计`
     },
     {
-        input: `### Step 6: 根因线索推理
+        input: `### Step 6: 性能趋势分析
 
-**Skill**: \`log_based_reasoner\`
-        
-**推理过程**:`,
-        output: `**线索1 (500错误)**: 大量500错误通常表示应用内部代码执行出错或未处理的异常。
-**线索2 (504错误)**: 大量504错误表示上游服务（Nginx）等待后端应用响应超时。
-**线索3 (延迟激增)**: P99延迟飙升，与504超时现象吻合，表明后端处理请求非常缓慢。
-        
-**综合推断**:
-- 缴费接口依赖的某个下游服务（如账户、账单、支付网关等）出现性能问题或故障，导致接口处理缓慢，最终引发大量超时(504)和内部错误(500)。
-- **因缺少调用链数据，无法确定具体是哪个下游服务。**`
+**Skill**: \`performance_trend_analyzer\``,
+        output: `**P99延迟趋势 (近7天)**:
+\`\`\`
+日期         平均P99延迟   变化
+2024-11-05   242ms       +1.7%
+2024-11-06   236ms       -0.8%
+...
+2024-11-11   242ms       +1.7%
+\`\`\`
+**趋势**: 稳定 (波动 < 3%)
+**评估**: ✓ 性能表现一致，无劣化趋势
+
+---
+
+**成功率趋势 (近7天)**:
+\`\`\`
+日期         平均成功率   变化
+2024-11-05   99.5%       -0.1%
+2024-11-06   99.7%       +0.1%
+...
+2024-11-11   99.6%       持平
+\`\`\`
+**趋势**: 稳定 (波动 < 0.2%)
+**评估**: ✓ 可用性持续稳定
+`
     }
 ];
 
 
-// --- Scenario 2: SLS + OpenTelemetry ---
+// --- Scenario 2: SLS + OpenTelemetry (Failure) ---
 const thoughtProcessPreambleWithTrace = `**巡检时间**: 2024-11-11 14:30:00  
 **分析周期**: 过去24小时 (2024-11-10 14:30 ~ 2024-11-11 14:30)  
 **巡检目标**: \`/api/payment/submit\` 缴费提交接口
@@ -191,19 +248,45 @@ const thoughtProcessPreambleWithTrace = `**巡检时间**: 2024-11-11 14:30:00
 `;
 
 const thoughtProcessStepsWithTrace = [
-    ...thoughtProcessStepsDefault.slice(0, 5), // Reuse first 5 steps
-    { // Step 6 - Replaces the original Step 6
+    {
+        input: `### Step 1-4: 日志分析与异常检测
+**Skill**: \`log_analyzer_pipeline\`
+**调用参数**: 
+\`\`\`yaml
+target: /api/payment/submit
+time_window: 24h
+baseline_window: 14d
+\`\`\`
+`,
+        output: `**执行结果**:
+- ⚠️ **严重异常**: 在 10:10 - 11:30 期间检测到核心指标严重偏离基线
+  - **成功率**: 从 99.5% 骤降至 97.0%
+  - **P99延迟**: 从 261ms 激增至 924ms`
+    },
+    {
+        input: `### Step 5: 深度错误分析
+**Skill**: \`sls_query\`
+**调用参数**:
+\`\`\`yaml
+query: >
+  request_uri:"/api/payment/submit" and status >= 500
+  and time in [10:10, 11:30] | 
+  select status, count(1) as error_count...
+\`\`\`
+`,
+        output: `**错误分布详情**:
+- **500 Internal Server Error**: 4,281次 (占比 65.2%)
+- **504 Gateway Timeout**: 1,895次 (占比 28.9%)`
+    },
+    { 
         input: `### Step 6: 关联 TraceID 并查询调用链
-
 **Skill**: \`trace_analyzer\`
-
 **调用参数**:
 \`\`\`yaml
 source: opentelemetry_backend
 query_type: find_slow_traces
 time_range: [10:10, 11:30]
 service_name: payment-api
-operation_name: /api/payment/submit
 tags:
   - http.status_code: 500
   - error: true
@@ -226,12 +309,9 @@ payment-api: /api/payment/submit (总耗时: 1024ms)
 \`\`\`
 `
     },
-    { // Step 7
+    { 
         input: `### Step 7: 根因定位与证据确认
-
-**Skill**: \`root_cause_reasoner\`
-
-**推理过程**:`,
+**Skill**: \`root_cause_reasoner\``,
         output: `**证据1 (日志)**: 500/504错误激增，P99延迟飙升
 - 来源: [SLS日志分析]
 - 指向: 后端服务处理缓慢
@@ -240,12 +320,8 @@ payment-api: /api/payment/submit (总耗时: 1024ms)
 - 来源: [Trace 分析]
 - 指向: \`billing-service\` 服务是性能瓶颈
 
-**证据3 (调用链)**: \`billing-service\` 的 \`/getBill\` 接口耗时主要在数据库查询
-- 来源: [Trace Span 分析]
-- 指向: billing-db 的慢查询是根因
-
 **结论**:
-- **高置信度定位**: 问题根因是下游 **电费计算服务(billing-service)** 的数据库查询性能问题，导致缴费接口超时和失败。
+- **高置信度定位**: 问题根因是下游 **电费计算服务(billing-service)** 的数据库查询性能问题。
 `
     }
 ];
@@ -264,6 +340,8 @@ const InspectionView: React.FC<{
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
+
+
 
     useEffect(() => {
         scrollToBottom();
@@ -294,9 +372,8 @@ const InspectionView: React.FC<{
         setIsAnalyzing(true);
 
         try {
-             // Simulate a more complex analysis when trace is connected
-            const baseStepDelay = isTraceConnected ? 2000 : 1500;
-            const randomStepDelay = isTraceConnected ? 2000 : 1500;
+            const baseStepDelay = 1500;
+            const randomStepDelay = 1500;
 
             for (const step of thoughtProcessSteps) {
                 // Show Input
