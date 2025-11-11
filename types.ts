@@ -1,4 +1,4 @@
-
+// Fix: Moved Page type here from App.tsx to resolve a circular dependency and import conflict.
 export type Page = 'welcome' | 'datasource' | 'inspection';
 
 export type DataSourceId = 'sls' | 'opentelemetry';
@@ -23,6 +23,9 @@ export type AssistantMessage = {
   role: 'assistant';
   steps: MessageStep[];
   thoughtProcess?: string;
+  analysisContext?: {
+    dataSources: DataSourceId[];
+  };
 };
 
 export type MessageType = UserMessage | AssistantMessage;

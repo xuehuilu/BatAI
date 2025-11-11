@@ -1,11 +1,11 @@
-
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import WelcomeScreen from './components/WelcomeScreen';
 import IntegrationCenter from './components/IntegrationCenter';
 import InspectionView from './components/InspectionView';
-import { Page, MessageType, DataSourceId } from './types';
+// Fix: Import Page from types.ts to resolve import conflict.
+import { MessageType, DataSourceId, Page } from './types';
 
 function App() {
     const [currentPage, setCurrentPage] = useState<Page>('welcome');
@@ -31,6 +31,7 @@ function App() {
                         setMessages={setMessages}
                         isAnalyzing={isAnalyzing}
                         setIsAnalyzing={setIsAnalyzing}
+                        connectedSources={connectedSources}
                     />
                 );
             default:
