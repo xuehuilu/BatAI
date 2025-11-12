@@ -10,7 +10,8 @@ const TopBar: React.FC<TopBarProps> = ({ currentPage, connectedSourcesCount }) =
     const pageTitles: Record<Page, string> = {
         welcome: '欢迎使用 BatAI',
         datasource: '数据集成中心',
-        inspection: '智能巡检'
+        inspection: '智能巡检',
+        skills: '技能中心'
     };
 
     return (

@@ -4,6 +4,7 @@ import TopBar from './components/TopBar';
 import WelcomeScreen from './components/WelcomeScreen';
 import IntegrationCenter from './components/IntegrationCenter';
 import InspectionView from './components/InspectionView';
+import SkillsCenter from './components/SkillsCenter';
 // Fix: Import Page from types.ts to resolve import conflict.
 import { MessageType, DataSourceId, Page } from './types';
 
@@ -34,6 +35,8 @@ function App() {
                         connectedSources={connectedSources}
                     />
                 );
+            case 'skills':
+                return <SkillsCenter />;
             default:
                 return <WelcomeScreen setCurrentPage={setCurrentPage} />;
         }

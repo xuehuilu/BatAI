@@ -4,6 +4,7 @@ import { BatIcon } from './icons/BatIcon';
 import { HomeIcon } from './icons/HomeIcon';
 import { PlugIcon } from './icons/PlugIcon';
 import { SearchIcon } from './icons/SearchIcon';
+import { WrenchScrewdriverIcon } from './icons/WrenchScrewdriverIcon';
 
 interface SidebarProps {
     currentPage: Page;
@@ -64,6 +65,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage }) => {
                     label="智能巡检"
                     isActive={currentPage === 'inspection'}
                     onClick={handleInspectionClick}
+                />
+                <NavItem
+                    icon={<WrenchScrewdriverIcon className="w-5 h-5" />}
+                    label="技能中心"
+                    isActive={currentPage === 'skills'}
+                    onClick={() => setCurrentPage('skills')}
                 />
             </nav>
         </aside>

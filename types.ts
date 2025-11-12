@@ -1,5 +1,5 @@
 // Fix: Moved Page type here from App.tsx to resolve a circular dependency and import conflict.
-export type Page = 'welcome' | 'datasource' | 'inspection';
+export type Page = 'welcome' | 'datasource' | 'inspection' | 'skills';
 
 export type DataSourceId = 'sls' | 'opentelemetry';
 
