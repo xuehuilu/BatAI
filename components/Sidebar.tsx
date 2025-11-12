@@ -55,16 +55,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage }) => {
                     onClick={() => setCurrentPage('welcome')}
                 />
                 <NavItem
-                    icon={<PlugIcon className="w-5 h-5" />}
-                    label="数据集成"
-                    isActive={currentPage === 'datasource'}
-                    onClick={() => setCurrentPage('datasource')}
-                />
-                <NavItem
                     icon={<SearchIcon className="w-5 h-5" />}
                     label="智能巡检"
                     isActive={currentPage === 'inspection'}
                     onClick={handleInspectionClick}
+                />
+                <NavItem
+                    icon={<PlugIcon className="w-5 h-5" />}
+                    label="数据集成"
+                    isActive={currentPage === 'datasource'}
+                    onClick={() => setCurrentPage('datasource')}
                 />
                 <NavItem
                     icon={<WrenchScrewdriverIcon className="w-5 h-5" />}

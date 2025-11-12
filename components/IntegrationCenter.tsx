@@ -18,7 +18,7 @@ const IntegrationCenter: React.FC<IntegrationCenterProps> = ({ connectedSources,
             id: 'sls',
             name: '阿里云SLS',
             icon: 'sls',
-            desc: '接入业务入口的 access.log 文件，用于分析 API 成功率、响应时间和错误分布。',
+            desc: '连接阿里云日志服务（SLS），对您的日志数据进行大规模、低成本、实时的处理与分析。',
             features: ['成功率分析', '响应时间', '错误码分布'],
             category: 'required'
         },
