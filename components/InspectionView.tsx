@@ -213,120 +213,6 @@ exclude_anomalies: true
 ];
 
 
-// --- Scenario 2: SLS + OpenTelemetry (Failure) ---
-const thoughtProcessPreambleWithTrace = `**巡检时间**: 2024-11-11 14:30:00  
-**分析周期**: 过去24小时 (2024-11-10 14:30 ~ 2024-11-11 14:30)  
-**巡检目标**: \`/api/payment/submit\` 缴费提交接口
-
----
-
-## 一、分析过程
-
-### 思考过程
-
-**目标**: 巡检网上国网APP的核心缴费业务接口健康状态
-
-**分析策略**:
-1.  连接SLS数据源，获取访问日志，检测宏观指标异常
-2.  **连接OpenTelemetry数据源，获取分布式追踪数据**
-3.  **通过 TraceID 关联日志和追踪数据**
-4.  基于日志发现的异常时间段，筛选出问题Trace
-5.  深入分析问题Trace的耗时分布，**精确定位问题根因**
-6.  生成包含**调用链证据**的结构化报告
-
-**数据完整度评估**:
-- ✅ 已接入: 应用层访问日志 (access.log)
-- ✅ 已接入: 分布式追踪数据 (OpenTelemetry)
-- ❌ 未接入: 数据库监控
-- ❌ 未接入: 下游依赖服务监控
-
-**分析能力预期**: 基于日志和调用链，可以发现问题并精确定位到具体服务和接口。
-
----
-
-## 二、Skills 调用过程
-`;
-
-const thoughtProcessStepsWithTrace = [
-    {
-        input: `### Step 1-4: 日志分析与异常检测
-**Skill**: \`log_analyzer_pipeline\`
-**调用参数**: 
-\`\`\`yaml
-target: /api/payment/submit
-time_window: 24h
-baseline_window: 14d
-\`\`\`
-`,
-        output: `**执行结果**:
-- ⚠️ **严重异常**: 在 10:10 - 11:30 期间检测到核心指标严重偏离基线
-  - **成功率**: 从 99.5% 骤降至 97.0%
-  - **P99延迟**: 从 261ms 激增至 924ms`
-    },
-    {
-        input: `### Step 5: 深度错误分析
-**Skill**: \`sls_query\`
-**调用参数**:
-\`\`\`yaml
-query: >
-  request_uri:"/api/payment/submit" and status >= 500
-  and time in [10:10, 11:30] | 
-  select status, count(1) as error_count...
-\`\`\`
-`,
-        output: `**错误分布详情**:
-- **500 Internal Server Error**: 4,281次 (占比 65.2%)
-- **504 Gateway Timeout**: 1,895次 (占比 28.9%)`
-    },
-    { 
-        input: `### Step 6: 关联 TraceID 并查询调用链
-**Skill**: \`trace_analyzer\`
-**调用参数**:
-\`\`\`yaml
-source: opentelemetry_backend
-query_type: find_slow_traces
-time_range: [10:10, 11:30]
-service_name: payment-api
-tags:
-  - http.status_code: 500
-  - error: true
-\`\`\``,
-        output: `**查询执行结果**:
-- 发现 **6,834** 条与500错误相关的Trace
-- 随机抽取 5 条进行分析...
-
-**Trace 分析 (TraceID: a1b2c3d4e5f6)**:
-\`\`\`
-payment-api: /api/payment/submit (总耗时: 1024ms)
-  ├── pre-check (耗时: 5ms)
-  ├── get_user_info (耗时: 30ms)
-  │   └── user-service: /getUser (耗时: 25ms)
-  ├── get_bill_details (耗时: 950ms)  <--- ⚠️ **耗时占比 92.8%**
-  │   └── billing-service: /getBill (耗时: 945ms)
-  │       └── billing-db: SELECT ... (耗时: 940ms) <--- ⚠️ **慢查询**
-  └── create_payment_order (耗时: 39ms)
-      └── order-service: /create (耗时: 32ms)
-\`\`\`
-`
-    },
-    { 
-        input: `### Step 7: 根因定位与证据确认
-**Skill**: \`root_cause_reasoner\``,
-        output: `**证据1 (日志)**: 500/504错误激增，P99延迟飙升
-- 来源: [SLS日志分析]
-- 指向: 后端服务处理缓慢
-
-**证据2 (调用链)**: 92.8%的请求耗时集中在 \`get_bill_details\` 调用
-- 来源: [Trace 分析]
-- 指向: \`billing-service\` 服务是性能瓶颈
-
-**结论**:
-- **高置信度定位**: 问题根因是下游 **电费计算服务(billing-service)** 的数据库查询性能问题。
-`
-    }
-];
-
-
 const InspectionView: React.FC<{
     messages: MessageType[];
     setMessages: React.Dispatch<React.SetStateAction<MessageType[]>>;
@@ -355,9 +241,8 @@ const InspectionView: React.FC<{
         const newUserMessage: MessageType = { role: 'user', content: prompt };
         setInputValue('');
         
-        const isTraceConnected = connectedSources.includes('opentelemetry');
-        const thoughtProcessPreamble = isTraceConnected ? thoughtProcessPreambleWithTrace : thoughtProcessPreambleDefault;
-        const thoughtProcessSteps = isTraceConnected ? thoughtProcessStepsWithTrace : thoughtProcessStepsDefault;
+        const thoughtProcessPreamble = thoughtProcessPreambleDefault;
+        const thoughtProcessSteps = thoughtProcessStepsDefault;
 
         const assistantMessageTemplate: AssistantMessage = {
             role: 'assistant',

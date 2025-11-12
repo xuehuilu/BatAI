@@ -77,7 +77,7 @@ const SkillsCenter: React.FC = () => {
                                 <span className="text-xs font-medium bg-gray-200 text-gray-600 px-2 py-0.5 rounded-md">预览</span>
                             </h2>
                             <p className="text-gray-600">
-                                可复用的、可定制的指令，Claude 可以在任何聊天中遵循。 <a href="#" className="text-blue-600 hover:underline">了解更多。</a>
+                                可复用的、可定制的指令，BatAI 可以在任何聊天中遵循。 <a href="#" className="text-blue-600 hover:underline">了解更多。</a>
                             </p>
                         </div>
                         <button 

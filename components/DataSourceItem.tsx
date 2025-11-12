@@ -1,7 +1,7 @@
 import React from 'react';
 import { DataSource } from '../types';
 import { SlsIcon } from './icons/SlsIcon';
-import { TraceIcon } from './icons/TraceIcon';
+import { ElasticsearchIcon } from './icons/ElasticsearchIcon';
 
 interface DataSourceItemProps {
     source: DataSource & { status: 'connected' | 'available' };
@@ -10,12 +10,12 @@ interface DataSourceItemProps {
 
 const iconMap = {
     sls: <SlsIcon className="w-6 h-6 text-white" />,
-    trace: <TraceIcon className="w-6 h-6 text-white" />,
+    es: <ElasticsearchIcon className="w-6 h-6 text-white" />,
 };
 
 const iconBgMap = {
     sls: 'bg-gradient-to-br from-orange-500 to-red-500',
-    trace: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+    es: 'bg-gradient-to-br from-teal-500 to-cyan-600',
 };
 
 const DataSourceItem: React.FC<DataSourceItemProps> = ({ source, onConfigure }) => {

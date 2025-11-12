@@ -1,12 +1,12 @@
 // Fix: Moved Page type here from App.tsx to resolve a circular dependency and import conflict.
 export type Page = 'welcome' | 'datasource' | 'inspection' | 'skills';
 
-export type DataSourceId = 'sls' | 'opentelemetry';
+export type DataSourceId = 'sls' | 'elasticsearch';
 
 export type DataSource = {
   id: DataSourceId;
   name: string;
-  icon: 'sls' | 'trace';
+  icon: 'sls' | 'es';
   desc: string;
   features: string[];
   category: 'required' | 'recommended';

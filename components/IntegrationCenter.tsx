@@ -23,11 +23,11 @@ const IntegrationCenter: React.FC<IntegrationCenterProps> = ({ connectedSources,
             category: 'required'
         },
         {
-            id: 'opentelemetry',
-            name: 'OpenTelemetry',
-            icon: 'trace',
-            desc: '分布式追踪数据，用于跨服务的问题链路推理和根因分析。',
-            features: ['调用链追踪', '跨服务分析'],
+            id: 'elasticsearch',
+            name: 'Elasticsearch',
+            icon: 'es',
+            desc: '接入应用日志、错误堆栈等非结构化数据，用于深度错误分析和关键字搜索。',
+            features: ['日志搜索', '错误聚合', '关键字分析'],
             category: 'recommended'
         }
     ];
