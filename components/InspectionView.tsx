@@ -212,6 +212,162 @@ exclude_anomalies: true
     }
 ];
 
+// --- Scenario 2: SLS Only (Abnormal/Failure Check) ---
+const thoughtProcessPreambleAbnormal = `收到用户关于“缴费失败”的巡检请求，开始进行根因分析...
+
+**分析目标**:
+- 定位缴费接口成功率下降的根本原因
+- 识别故障影响范围
+- 提出解决方案建议
+
+**数据评估**:
+- ✅ 已接入: Nginx 访问日志 (sgcc-production-logs/nginx-access-log)
+- ✅ 已接入: 应用日志 (sgcc-production-logs/app-logs-*)
+- ❌ 未接入: 分布式追踪
+- ❌ 未接入: 数据库监控
+
+**当前分析能力**: 基于访问日志和应用日志，可以进行API入口->微服务节点的关联分析。虽然没有完整的调用链，但通过时间和错误模式匹配，可以推断问题根源。
+
+---
+
+## 二、Skills 调用过程`;
+
+const thoughtProcessStepsAbnormal = [
+    {
+        input: `### Step 1: 评估入口 API 健康状况
+
+**Skill**: \`sls_query_builder\`
+
+**查询目标**: 提取缴费接口近30分钟的成功率、响应时间、流量分布
+
+**生成的查询语句**:
+\`\`\`sql
+* | WHERE request_path = '/api/payment/submit'
+    AND __time__ >= from_unixtime(1731309600) -- 30分钟前
+    AND __time__ < from_unixtime(1731311400)
+  | SELECT 
+      ROUND(COUNT_IF(http_status < 500) * 100.0 / COUNT(*), 2) as success_rate,
+      APPROX_PERCENTILE(response_time, 0.99) as p99_latency,
+      COUNT_IF(http_status >= 500) as error_count
+\`\`\``,
+        output: `**查询执行**:
+\`\`\`
+扫描日志: 215,789 条
+处理时间: 1.2 秒
+匹配记录: 48,234 条
+\`\`\`
+
+**查询结果**:
+
+| 指标 | 当前值 |
+|------|--------|
+| 成功率 | 92.1% |
+| P99延迟 | 857ms |
+| 500错误数 | 3812 |
+
+**初步结论**: 🔴 **服务严重异常**。成功率从日常的99.6%暴跌至92.1%，P99延迟从240ms飙升至857ms。问题真实存在。`
+    },
+    {
+        input: `### Step 2: 当前数据与基线对比
+
+**Skill**: \`baseline_comparator\``,
+        output: `**对比分析**:
+
+| 指标 | 当前值 | 基线范围 | 评估 | 说明 |
+|------|--------|---------|------|------|
+| 成功率 | 92.1% | 99.3%-99.8% | ❌ 严重偏离 | 下降了 7.5 个百分点 |
+| P99延迟 | 857ms | 225ms-255ms | ❌ 严重偏离 | 延迟增加了 257% |
+| 错误率 | 7.9% | 0.2%-0.7% | ❌ 严重偏离 | 错误率增加了 10 倍以上 |
+
+**结论**: 指标全面劣化，系统处于故障状态。`
+    },
+    {
+        input: `### Step 3: 筛选异常时间段的错误日志
+
+**Skill**: \`sls_multi_logstore_search\`
+
+**分析逻辑**: 由于没有链路追踪，BatAI 将在故障发生的时间窗口（14:00 - 14:30）内，在**所有**微服务的应用日志中搜索 ERROR 级别的日志，以找出异常源头。
+
+**生成的查询语句**:
+\`\`\`sql
+* | WHERE __logstore__ LIKE 'app-logs-%'
+    AND __time__ >= from_unixtime(1731309600)
+    AND __time__ < from_unixtime(1731311400)
+    AND level = 'ERROR'
+  | SELECT 
+      __logstore__ as service_name,
+      COUNT(*) as error_count,
+      arbitrary(error_message) as sample_error
+  | GROUP BY service_name
+  | ORDER BY error_count DESC
+  | LIMIT 5
+\`\`\``,
+        output: `**查询结果**:
+\`\`\`
+错误日志聚合 (Top 5):
+
+| 服务名 | 错误数 | 错误示例 |
+|------------------|--------|----------------------------------------------------------------|
+| app-logs-payment | 3689 | java.sql.SQLTransientConnectionException: Connection is not available... |
+| app-logs-coupon | 178 | java.sql.SQLTransientConnectionException: Connection is not available... |
+| app-logs-user | 5 | NullPointerException at com.sgcc.user.service.impl... |
+| app-logs-order | 2 | Feign client timeout exception for payment-service |
+| app-logs-gateway | 0 | - |
+\`\`\`
+**发现**:
+- 绝大多数错误集中在 \`payment-service\` 和 \`coupon-service\`。
+- 两种服务都报出了相同的数据库连接异常。
+- 其他服务的错误数量极少，可判断为次生问题或无关问题。`
+    },
+    {
+        input: `### Step 4: 深入分析核心故障服务
+
+**Skill**: \`sls_log_metric_extractor\`
+
+**分析目标**: 提取 \`payment-service\` 的内部性能指标（错误率、RT）
+
+**生成的查询语句**:
+\`\`\`sql
+* | WHERE __logstore__ = 'app-logs-payment'
+    AND __time__ >= from_unixtime(1731309600)
+  | SELECT 
+      SUM(CASE WHEN success = 'false' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as internal_error_rate,
+      APPROX_PERCENTILE(response_time, 0.99) as internal_p99_latency
+\`\`\``,
+        output: `**payment-service 内部指标**:
+\`\`\`
+├─ 内部错误率: 15.6%
+└─ 内部P99延迟: 2100ms
+\`\`\`
+**结论**: \`payment-service\` 内部错误率远高于入口的7.9%，且内部延迟极高。**故障根源锁定在 \`payment-service\` 及其下游依赖**。`
+    },
+    {
+        input: `### Step 5: 综合推理与根因定位
+
+**Skill**: \`root_cause_synthesizer\`
+
+**输入信息**:
+1.  **现象**: API网关 \`/api/payment/submit\` 成功率暴跌，延迟飙升。
+2.  **证据 1**: \`payment-service\` 和 \`coupon-service\` 同时出现大量数据库连接超时错误。
+3.  **证据 2**: \`payment-service\` 内部监控指标严重劣化。
+4.  **知识库**: \`payment-service\` 和 \`coupon-service\` 共享同一个数据库集群 \`mysql-prod-cluster-01\`。
+
+**推理过程**:
+- 多个服务同时出现同一种数据库错误，指向共享的下游依赖出现问题。
+- 错误类型为“连接不可用”，表明数据库无法处理新的连接请求。
+- 这通常由数据库自身高负载（CPU、IO）、慢查询或连接数耗尽导致。`,
+        output: `**推断结论**:
+\`\`\`
+- **直接原因**: 'payment-service' 和 'coupon-service' 无法从数据库连接池获取连接。
+- **根本原因 (高置信度)**: 共享数据库集群 'mysql-prod-cluster-01' 出现性能瓶颈或连接数耗尽。
+
+---
+
+分析完成。正在生成最终报告...
+\`\`\``
+    }
+];
+
 
 const InspectionView: React.FC<{
     messages: MessageType[];
@@ -241,15 +397,17 @@ const InspectionView: React.FC<{
         const newUserMessage: MessageType = { role: 'user', content: prompt };
         setInputValue('');
         
-        const thoughtProcessPreamble = thoughtProcessPreambleDefault;
-        const thoughtProcessSteps = thoughtProcessStepsDefault;
+        const isAbnormal = prompt.includes('异常');
+        const thoughtProcessPreamble = isAbnormal ? thoughtProcessPreambleAbnormal : thoughtProcessPreambleDefault;
+        const thoughtProcessSteps = isAbnormal ? thoughtProcessStepsAbnormal : thoughtProcessStepsDefault;
 
         const assistantMessageTemplate: AssistantMessage = {
             role: 'assistant',
             thoughtProcess: thoughtProcessPreamble,
             steps: [],
             analysisContext: {
-                dataSources: connectedSources
+                dataSources: connectedSources,
+                resultType: isAbnormal ? 'abnormal' : 'healthy'
             }
         };
 

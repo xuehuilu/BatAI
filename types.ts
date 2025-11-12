@@ -25,6 +25,7 @@ export type AssistantMessage = {
   thoughtProcess?: string;
   analysisContext?: {
     dataSources: DataSourceId[];
+    resultType?: 'healthy' | 'abnormal';
   };
 };
 
