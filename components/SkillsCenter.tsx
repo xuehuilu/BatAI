@@ -13,32 +13,11 @@ interface Skill {
 const initialSkills: Skill[] = [
     {
         id: 'sls-data-connector',
-        title: 'sls-data-connector',
+        title: 'SLS运维分析',
         description: 'SLS数据获取技能，可以从SLS中获取访问日志、获取TPS、RT、错误率等数据',
         author: 'BatAI Team',
         enabled: true,
     },
-    {
-        id: 'artifacts-builder',
-        title: 'artifacts-builder',
-        description: '用于创建复杂HTML产物的工具套件，使用现代前端技术（React, Tailwind CSS）。适用于需要状态管理、路由等的复杂产物。',
-        author: 'Anthropic',
-        enabled: true,
-    },
-    {
-        id: 'brand-guidelines',
-        title: 'brand-guidelines',
-        description: '将Anthropic的官方品牌颜色和排版应用于任何可能受益于Anthropic外观和感觉的产物。在需要品牌颜色或风格指南时使用。',
-        author: 'Anthropic',
-        enabled: true,
-    },
-    {
-        id: 'canvas-design',
-        title: 'canvas-design',
-        description: '使用设计哲学在.png和.pdf文档中创作精美的视觉艺术。当用户要求创建海报、艺术品、设计或其他静态作品时，应使用此技能。',
-        author: 'Anthropic',
-        enabled: true,
-    }
 ];
 
 const ToggleSwitch = ({ enabled, onChange }: { enabled: boolean, onChange: () => void }) => (
